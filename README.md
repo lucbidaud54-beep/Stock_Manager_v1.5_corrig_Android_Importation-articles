@@ -1,0 +1,1 @@
+# Stock_Manager_v1.5_corrig_Android_Importation-articles
