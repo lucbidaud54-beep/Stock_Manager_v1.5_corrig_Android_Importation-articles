@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0052CC">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Stock Manager">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Stock Manager - DNMADE Daunot</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Écran de Connexion -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>📦 Stock Manager</h1>
+                <p>Gestion des ressources techniques DNMADE</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Identifiant</label>
+                    <input type="text" id="username" placeholder="Votre identifiant" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" placeholder="Votre mot de passe" required>
+                        <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('password')">👁️</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Connexion</button>
+                <p class="login-help">Identifiants de test : <br><strong>admin</strong> / admin123 ou <strong>user</strong> / user123</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Principale -->
+    <div id="appScreen" class="app-screen" style="display: none;">
+        <!-- Barre du haut (téléphone) -->
+        <header class="mobile-topbar">
+            <button type="button" id="menuToggle" class="menu-toggle" aria-label="Ouvrir le menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+            <span class="mobile-topbar-title">📦 Stock Manager</span>
+        </header>
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>📦 Stock Manager</h2>
+                <span id="userInfo" class="user-info"></span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-link" data-page="dashboard" data-role="admin,gestionnaire">📊 Tableau de bord</a>
+                <a href="#" class="nav-link" data-page="articles" data-role="admin,gestionnaire">📋 Catalogue</a>
+                <a href="#" class="nav-link" data-page="movements" data-role="admin,gestionnaire">🔄 Mouvements</a>
+                <a href="#" class="nav-link" data-page="inventory" data-role="admin,gestionnaire">📝 Inventaire</a>
+                <a href="#" class="nav-link" data-page="requests" data-role="admin,gestionnaire,utilisateur">📝 Demandes de matériel</a>
+                <a href="#" class="nav-link" data-page="checklist" data-role="admin,gestionnaire">📦 Check-list Retour</a>
+                <a href="#" class="nav-link" data-page="notifications" data-role="admin,gestionnaire,utilisateur">🔔 Notifications <span id="notificationBadge" class="notification-badge" style="display: none;">0</span></a>
+                <a href="#" class="nav-link" data-page="exports" data-role="admin,gestionnaire">📊 Exports</a>
+                <a href="#" class="nav-link" data-page="history" data-role="admin,gestionnaire">📜 Historique</a>
+                <a href="#" class="nav-link" data-page="users" data-role="admin">👥 Utilisateurs</a>
+                <a href="#" class="nav-link" id="logoutBtn" data-role="admin,gestionnaire,utilisateur">🚪 Déconnexion</a>
+            </nav>
+        </aside>
+
+        <!-- Contenu Principal -->
+        <main class="main-content">
+            <!-- Barre de Notifications -->
+            <div id="notificationsBar" class="notifications-bar"></div>
+            <!-- Tableau de Bord -->
+            <section id="dashboard" class="page">
+                <div class="page-header">
+                    <h1>Tableau de Bord</h1>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Articles en Stock</h3>
+                        <p id="totalArticles" class="big-number">0</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Mouvements Aujourd'hui</h3>
+                        <p id="todayMovements" class="big-number">0</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Stock Critique</h3>
+                        <p id="criticalStock" class="big-number warning">0</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Valeur du Stock</h3>
+                        <p id="stockValue" class="big-number">0€</p>
+                    </div>
+                </div>
+                <div class="dashboard-charts">
+                    <div class="chart-container">
+                        <h3>Top 5 Catégories</h3>
+                        <div id="topCategories" class="chart"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Mouvements (7 derniers jours)</h3>
+                        <div id="movementsChart" class="chart"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Catalogue d'Articles -->
+            <section id="articles" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>Catalogue d'Articles</h1>
+                    <div class="admin-only" style="gap: 8px; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" onclick="app.openImportArticles()">📥 Importer Excel</button>
+                        <button class="btn btn-secondary" onclick="app.downloadImportTemplate()">📄 Modèle</button>
+                        <button class="btn btn-primary" id="addArticleBtn">+ Ajouter</button>
+                    </div>
+                </div>
+                <div class="filters">
+                    <input type="text" id="searchArticles" placeholder="🔍 Rechercher un article...">
+                    <select id="filterCategory">
+                        <option value="">Toutes les catégories</option>
+                    </select>
+                    <select id="filterLocation">
+                        <option value="">Tous les emplacements</option>
+                    </select>
+                </div>
+                <div class="articles-container" id="articlesContainer"></div>
+            </section>
+
+            <!-- Mouvements de Stock -->
+            <section id="movements" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>Mouvements de Stock</h1>
+                    <button class="btn btn-primary" id="newMovementBtn">+ Nouveau Mouvement</button>
+                </div>
+                <div class="filters">
+                    <select id="filterMovementType">
+                        <option value="">Tous les types</option>
+                        <option value="Entrée">Entrée</option>
+                        <option value="Sortie">Sortie</option>
+                        <option value="Retour">Retour</option>
+                        <option value="Ajustement">Ajustement</option>
+                    </select>
+                    <input type="date" id="filterDate">
+                </div>
+                <div class="table-container">
+                    <table id="movementsTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Article</th>
+                                <th>Quantité</th>
+                                <th>Raison</th>
+                                <th>Utilisateur</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movementsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Centre de Notifications -->
+            <section id="notifications" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>🔔 Centre de Notifications</h1>
+                    <button class="btn btn-secondary" onclick="app.clearAllNotifications()">Effacer Tout</button>
+                </div>
+                <div id="notificationsCenter" class="notifications-center"></div>
+            </section>
+
+            <!-- Exports -->
+            <section id="exports" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>📊 Exports PDF & Excel</h1>
+                </div>
+                <div class="exports-grid">
+                    <div class="export-card">
+                        <h3>📋 Catalogue d'Articles</h3>
+                        <p>Exporte la liste de tous les articles avec quantités et prix.</p>
+                        <div class="export-actions">
+                            <button class="btn btn-primary" onclick="app.exportArticlesPDF()">PDF</button>
+                            <button class="btn btn-primary" onclick="app.exportArticlesExcel()">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="export-card">
+                        <h3>🔄 Mouvements</h3>
+                        <p>Exporte l'historique de tous les mouvements (entrées, sorties, retours).</p>
+                        <div class="export-actions">
+                            <button class="btn btn-primary" onclick="app.exportMovementsPDF()">PDF</button>
+                            <button class="btn btn-primary" onclick="app.exportMovementsExcel()">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="export-card">
+                        <h3>📝 Demandes de Matériel</h3>
+                        <p>Exporte toutes les demandes avec statuts et dates.</p>
+                        <div class="export-actions">
+                            <button class="btn btn-primary" onclick="app.exportRequestsPDF()">PDF</button>
+                            <button class="btn btn-primary" onclick="app.exportRequestsExcel()">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="export-card">
+                        <h3>📜 Historique d'Activité</h3>
+                        <p>Exporte le journal complet de toutes les actions.</p>
+                        <div class="export-actions">
+                            <button class="btn btn-primary" onclick="app.exportHistoryPDF()">PDF</button>
+                            <button class="btn btn-primary" onclick="app.exportHistoryExcel()">Excel</button>
+                        </div>
+                    </div>
+
+                    <div class="export-card" style="grid-column: 1/-1; background: rgba(0, 82, 204, 0.05); border: 2px solid #0052CC;">
+                        <h3>📦 Export Complet</h3>
+                        <p>Exporte TOUS les données : catalogue, mouvements, demandes et historique.</p>
+                        <div class="export-actions">
+                            <button class="btn btn-primary" onclick="app.exportAllPDF()" style="flex: 1;">PDF Complet</button>
+                            <button class="btn btn-primary" onclick="app.exportAllExcel()" style="flex: 1;">Excel Complet</button>
+                        </div>
+                    </div>
+
+                    <div class="export-card" style="grid-column: 1/-1; background: linear-gradient(135deg, #e3f2fd 0%, #f0f9ff 100%); border: 2px solid #2196F3;">
+                        <h3>☁️ Google Sheets - Base partagée</h3>
+                        <p style="color: #1565c0;"><strong>Tous les appareils partagent les mêmes données</strong> via Google Sheets : ce que l'un modifie apparaît chez les autres en quelques secondes (envoi automatique, réception toutes les 2 minutes ou au retour sur l'appli).</p>
+                        <div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                                <strong>Partagé :</strong> Articles • Mouvements • Demandes • Historique • Comptes utilisateurs (mots de passe chiffrés)<br>
+                                <strong>Propre à chaque appareil :</strong> Notifications
+                            </p>
+                            <p id="syncStatus" style="font-size: 12px; color: #0052CC; margin: 5px 0;">
+                                📊 État : Non configuré
+                            </p>
+                        </div>
+                        <div class="export-actions">
+                            <button class="btn btn-primary" onclick="app.syncToGoogleSheets()" style="background: #2196F3; flex: 1; padding: 12px; font-weight: bold;">
+                                🔄 Synchroniser maintenant
+                            </button>
+                        </div>
+                        <details style="margin-top: 15px;">
+                            <summary style="cursor: pointer; font-size: 13px; color: #555;">Options avancées (en cas de problème)</summary>
+                            <div class="export-actions" style="margin-top: 10px; gap: 10px; flex-wrap: wrap;">
+                                <button class="btn btn-secondary" onclick="app.sheetsReplaceFromServer()" style="flex: 1; min-width: 220px;">
+                                    ⬇️ Remplacer cet appareil par le Sheet
+                                </button>
+                                <button class="btn btn-secondary" onclick="app.sheetsOverwriteServer()" style="flex: 1; min-width: 220px;">
+                                    ⬆️ Écraser le Sheet avec cet appareil
+                                </button>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Check-list Retour -->
+            <section id="checklist" class="page admin-only" style="display: none;">
+                <div class="page-header">
+                    <h1>📦 Check-list Retour</h1>
+                </div>
+                <div id="checklistContainer" class="checklist-container"></div>
+            </section>
+
+            <!-- Demandes de Matériel -->
+            <section id="requests" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>Demandes de Matériel</h1>
+                    <button class="btn btn-primary" id="newRequestBtn">+ Nouvelle Demande</button>
+                </div>
+                <div class="filters">
+                    <select id="filterRequestStatus">
+                        <option value="">Tous les statuts</option>
+                        <option value="En attente">En attente</option>
+                        <option value="Approuvée">Approuvée</option>
+                        <option value="Refusée">Refusée</option>
+                        <option value="Livrée">Livrée</option>
+                        <option value="En retour">En retour</option>
+                        <option value="Retournée">Retournée</option>
+                    </select>
+                    <input type="date" id="filterRequestDate">
+                </div>
+                <div class="table-container">
+                    <table id="requestsTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>📁 Dossiers Demandes (Utilisateur - Projet)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Inventaire -->
+            <section id="inventory" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>Inventaire</h1>
+                    <button class="btn btn-primary" id="startInventoryBtn">📋 Débuter Inventaire</button>
+                </div>
+                <div class="inventory-container" id="inventoryContainer"></div>
+            </section>
+
+            <!-- Historique -->
+            <section id="history" class="page" style="display: none;">
+                <div class="page-header">
+                    <h1>Journal d'Activité</h1>
+                </div>
+                <div class="filters">
+                    <input type="text" id="searchHistory" placeholder="🔍 Rechercher dans l'historique...">
+                    <input type="date" id="filterHistoryDate">
+                </div>
+                <div class="table-container">
+                    <table id="historyTable" class="table">
+                        <thead>
+                            <tr>
+                                <th>Date & Heure</th>
+                                <th>Utilisateur</th>
+                                <th>Action</th>
+                                <th>Détails</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Gestion Utilisateurs -->
+            <section id="users" class="page admin-only" style="display: none;">
+                <div class="page-header">
+                    <h1>Administration des Utilisateurs</h1>
+                    <div class="page-header-actions" style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" id="addUserBtn">+ Ajouter Utilisateur</button>
+                        <button class="btn btn-success" id="addGestManagerBtn">+ Ajouter Gestionnaire Stock</button>
+                    </div>
+                </div>
+                <div class="users-container" id="usersContainer"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modales -->
+    <!-- Modal Ajouter/Éditer Article -->
+    <div id="articleModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="articleModalTitle">Ajouter un Article</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="articleForm" class="modal-form">
+                <div class="form-group">
+                    <label for="articleName">Nom de l'article</label>
+                    <input type="text" id="articleName" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="articleCategory">Catégorie</label>
+                        <select id="articleCategory" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="Son">Son</option>
+                            <option value="Lumière">Lumière</option>
+                            <option value="Vidéo">Vidéo</option>
+                            <option value="Accessoires">Accessoires</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="articleLocation">Emplacement</label>
+                        <select id="articleLocation" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="Salle A">Salle A</option>
+                            <option value="Salle B">Salle B</option>
+                            <option value="Salle C">Salle C</option>
+                            <option value="Magasin">Magasin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="articleQuantity">Quantité</label>
+                        <input type="number" id="articleQuantity" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="articleMinStock">Stock Minimum</label>
+                        <input type="number" id="articleMinStock" min="0" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="articlePrice">Prix Unitaire (€)</label>
+                        <input type="number" id="articlePrice" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="articleDescription">Description</label>
+                    <textarea id="articleDescription" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary close-modal">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Demande -->
+    <div id="requestModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Nouvelle Demande de Matériel</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="requestForm" class="modal-form">
+                <!-- Étape 1: Informations du Projet -->
+                <div class="form-group">
+                    <label><strong>🎬 Étape 1: Informations du Projet</strong></label>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectName">Nom du Projet *</label>
+                    <input type="text" id="projectName" placeholder="Ex: Tournage promo 2026, Production vidéo..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectDescription">Description (optionnel)</label>
+                    <textarea id="projectDescription" rows="2" placeholder="Détails du projet..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="requestStartDate">Date de Départ *</label>
+                        <input type="date" id="requestStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="requestReturnDate">Date de Retour *</label>
+                        <input type="date" id="requestReturnDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="requestReason">Motif *</label>
+                    <input type="text" id="requestReason" placeholder="Ex: Production audiovisuelle..." required>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #e1e4e8;">
+
+                <!-- Étape 2: Sélection des Articles -->
+                <div class="form-group">
+                    <label><strong>📦 Étape 2: Sélectionner les Articles</strong></label>
+                </div>
+
+                <div id="categoriesSelectionContainer" class="categories-selection-container"></div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #e1e4e8;">
+
+                <div id="articlesSelectionContainer" class="articles-selection-container"></div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #e1e4e8;">
+
+                <!-- Récapitulatif -->
+                <div style="background: #f6f8fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                    <strong>📋 Récapitulatif :</strong>
+                    <div id="requestSummary" style="margin-top: 10px; font-size: 0.9rem;">
+                        <p>Aucun article sélectionné</p>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary" id="submitRequestBtn">✓ Créer la Demande Complète</button>
+                    <button type="button" class="btn btn-secondary close-modal">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nouveau Mouvement -->
+    <div id="movementModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Enregistrer un Mouvement</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="movementForm" class="modal-form">
+                <div class="form-group">
+                    <label for="movementType">Type de Mouvement</label>
+                    <select id="movementType" required>
+                        <option value="">Sélectionner...</option>
+                        <option value="Entrée">Entrée (Achat/Réception)</option>
+                        <option value="Sortie">Sortie (Utilisation/Prêt)</option>
+                        <option value="Retour">Retour</option>
+                        <option value="Ajustement">Ajustement</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="movementArticle">Article</label>
+                    <select id="movementArticle" required></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="movementQuantity">Quantité</label>
+                        <input type="number" id="movementQuantity" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="movementDate">Date</label>
+                        <input type="date" id="movementDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="movementReason">Raison/Motif</label>
+                    <select id="movementReason">
+                        <option value="">Sélectionner...</option>
+                        <option value="Achat">Achat</option>
+                        <option value="Prêt étudiant">Prêt étudiant</option>
+                        <option value="Réparation">Réparation</option>
+                        <option value="Casse">Casse</option>
+                        <option value="Correction inventaire">Correction inventaire</option>
+                        <option value="Retrait du stock">Retrait du stock</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="movementNotes">Notes</label>
+                    <textarea id="movementNotes" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary close-modal">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Inventaire -->
+    <div id="inventoryModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Inventaire Physique</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="inventory-form">
+                <div id="inventoryItems"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary" id="completeInventoryBtn">Valider Inventaire</button>
+                    <button type="button" class="btn btn-secondary close-modal">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ajouter Utilisateur -->
+    <div id="userModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">Ajouter Utilisateur</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <form id="userForm" class="modal-form">
+                <div class="form-group">
+                    <label for="userName">Nom Complet</label>
+                    <input type="text" id="userName" required>
+                </div>
+                <div class="form-group">
+                    <label for="userUsername">Identifiant</label>
+                    <input type="text" id="userUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Mot de passe</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="userPassword" required>
+                        <button type="button" class="password-toggle-btn" onclick="app.togglePasswordVisibility('userPassword')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Rôle</label>
+                    <select id="userRole" required>
+                        <option value="">Sélectionner...</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Gestionnaire">Gestionnaire</option>
+                        <option value="Utilisateur">Utilisateur</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                    <button type="button" class="btn btn-secondary close-modal">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ✅ SOLUTION SANS CDN: Exports en CSV pur (fonctionne TOUJOURS) -->
+    <script>
+        // Pas de dépendance CDN - tout fonctionne localement
+        console.log('✅ Mode exports CSV activé (sans CDN)');
+    </script>
+
+    <script src="app.js"></script>
+    <script>
+        // ===== GESTIONNAIRE LOGIN =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔐 Initialisation Login');
+            
+            // Gérer la soumission du formulaire de login
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    
+                    console.log('🔓 Tentative login:', username);
+                    
+                    if (app && app.login(username, password)) {
+                        console.log('✅ Login réussi');
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('appScreen').style.display = 'flex';
+                        document.getElementById('userInfo').textContent = app.currentUser.fullName;
+                        
+                        // Afficher la première page
+                        showPage('dashboard');
+                    } else {
+                        console.log('❌ Login échoué');
+                        alert('❌ Identifiant ou mot de passe incorrect');
+                    }
+                });
+            }
+            
+            // Fonction pour afficher une page
+            window.showPage = function(pageName) {
+                console.log('Affichage page:', pageName);
+                
+                // Cacher TOUTES les sections
+                const allPages = document.querySelectorAll('.page');
+                allPages.forEach(page => page.style.display = 'none');
+                
+                // Afficher la section demandée
+                const targetPage = document.getElementById(pageName);
+                if (targetPage) {
+                    targetPage.style.display = 'block';
+                    console.log('✅ Page affichée:', pageName);
+                } else {
+                    console.log('❌ Page non trouvée:', pageName);
+                }
+                
+                // Mettre à jour les liens actifs
+                const navLinks = document.querySelectorAll('.nav-link');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('data-page') === pageName) {
+                        link.classList.add('active');
+                    } else {
+                        link.classList.remove('active');
+                    }
+                });
+            };
+            
+            // Ajouter les événements de navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    console.log('🔗 Clic nav:', page);
+                    showPage(page);
+                });
+            });
+            
+            console.log('✅ Événements de navigation attachés');
+
+            // ===== MENU TÉLÉPHONE (ouvrir / fermer) =====
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const menuToggle = document.getElementById('menuToggle');
+
+            function setMenu(open) {
+                if (!sidebar) return;
+                sidebar.classList.toggle('open', open);
+                if (overlay) overlay.classList.toggle('show', open);
+                if (menuToggle) {
+                    menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+                    menuToggle.textContent = open ? '✕' : '☰';
+                }
+                document.body.classList.toggle('menu-open', open);
+            }
+
+            if (menuToggle) menuToggle.addEventListener('click', function() {
+                setMenu(!sidebar.classList.contains('open'));
+            });
+            if (overlay) overlay.addEventListener('click', function() { setMenu(false); });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') setMenu(false);
+            });
+            // Fermer le menu après un clic sur un lien
+            document.querySelectorAll('.nav-link').forEach(function(link) {
+                link.addEventListener('click', function() { setMenu(false); });
+            });
+            // Si on agrandit l'écran, on referme le menu
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) setMenu(false);
+            });
+        });
+
+        // ===== INSTALLATION SUR L'ÉCRAN D'ACCUEIL (PWA) =====
+        // Fonctionne seulement si le site est en https (ou localhost)
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('sw.js').catch(function(err) {
+                    console.log('Service worker non enregistré:', err);
+                });
+            });
+        }
+
+        // Vérifier le chargement
+        window.addEventListener('load', function() {
+            console.log('=== VÉRIFICATION SYSTÈME ===');
+            console.log('App chargée: ' + (typeof app !== 'undefined' ? '✅ OUI' : '❌ NON'));
+            console.log('Mode export: CSV (sans librairies)');
+        });
+        
+        // Vérification que tout est chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page chargée');
+            if (typeof app !== 'undefined') {
+                console.log('App initialisée');
+            }
+        });
+    </script>
+</body>
+</html>
